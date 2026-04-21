@@ -34,11 +34,11 @@ const cardTypes = {
 };
 // card type logos
 const cardTypeImages = {
-    visa: '/public/card-logos/visa.png',
-    mastercard: '/public/card-logos/mastercard.png',
-    amex: '/public/card-logos/amex.png',
-    discover: '/public/card-logos/discover.png',
-    jcb: '/public/card-logos/jcb.png',
+    visa: './public/assets/images/visa.png',
+    mastercard: './public/assets/images/mastercard.png',
+    amex: './public/assets/images/amex.png',
+    discover: './public/assets/images/discover.png',
+    jcb: './public/assets/images/jcb.png',
 };
 function detectCardType(number) {
     for (const cardType of Object.values(cardTypes)) {
@@ -92,6 +92,16 @@ function preventNonNumericInput(e) {
         e.preventDefault();
     }
 }
+// helper function for input validation
+function validateInput(input, validator, feedbackMessage) {
+    const value = input.value;
+    const error = validator(value);
+    input.setCustomValidity(error);
+    const feedback = input.parentElement?.querySelector('.invalid-feedback');
+    if (feedback) {
+        feedback.textContent = input.validationMessage || feedbackMessage;
+    }
+}
 function initializeCardInput() {
     const cardInput = document.getElementById('cardNumber');
     const cardTypeIndicator = document.getElementById('cardTypeIndicator');
@@ -122,21 +132,14 @@ function initializeCardInput() {
             }
         }
         // validate the card number
-        const digitsOnly = input.value.replace(/\D/g, '');
-        if (digitsOnly === '') {
-            input.setCustomValidity('Please enter your credit card number.');
-        }
-        else if (digitsOnly.length < 13 || digitsOnly.length > 19 || !luhnCheck(digitsOnly)) {
-            input.setCustomValidity('Please enter a valid credit card number.');
-        }
-        else {
-            input.setCustomValidity('');
-        }
-        // update feedback message
-        const feedback = input.parentElement?.querySelector('.invalid-feedback');
-        if (feedback) {
-            feedback.textContent = input.validationMessage || 'Enter a valid card number.';
-        }
+        validateInput(input, (value) => {
+            const digitsOnly = value.replace(/\D/g, '');
+            if (digitsOnly === '')
+                return 'Please enter your credit card number.';
+            if (digitsOnly.length < 13 || digitsOnly.length > 19 || !luhnCheck(digitsOnly))
+                return 'Please enter a valid credit card number.';
+            return '';
+        }, 'Enter a valid card number.');
     });
     // prevent non-numeric input for card number
     cardInput.addEventListener('keypress', preventNonNumericInput);
@@ -144,21 +147,14 @@ function initializeCardInput() {
     if (cvcInput) {
         cvcInput.addEventListener('input', (e) => {
             const input = e.target;
-            const digitsOnly = input.value.replace(/\D/g, '');
-            if (digitsOnly === '') {
-                input.setCustomValidity('Please enter your 3 or 4-digit card security code.');
-            }
-            else if (digitsOnly.length < 3 || digitsOnly.length > 4) {
-                input.setCustomValidity('Please enter a valid security code.');
-            }
-            else {
-                input.setCustomValidity('');
-            }
-            // update feedback message
-            const feedback = input.parentElement?.querySelector('.invalid-feedback');
-            if (feedback) {
-                feedback.textContent = input.validationMessage || 'Enter the 3- or 4-digit code.';
-            }
+            validateInput(input, (value) => {
+                const digitsOnly = value.replace(/\D/g, '');
+                if (digitsOnly === '')
+                    return 'Please enter your 3 or 4-digit card security code.';
+                if (digitsOnly.length < 3 || digitsOnly.length > 4)
+                    return 'Please enter a valid security code.';
+                return '';
+            }, 'Enter the 3- or 4-digit code.');
         });
         // prevent non-numeric input for CVC
         cvcInput.addEventListener('keypress', preventNonNumericInput);
@@ -176,27 +172,17 @@ function initializeCardInput() {
             }
             input.value = value;
             // validate the expiry date
-            const digitsOnly = input.value.replace(/\D/g, '');
-            if (digitsOnly === '') {
-                input.setCustomValidity('Please enter your card expiration date.');
-            }
-            else if (digitsOnly.length < 4) {
-                input.setCustomValidity('Please enter a valid expiration date.');
-            }
-            else {
+            validateInput(input, (value) => {
+                const digitsOnly = value.replace(/\D/g, '');
+                if (digitsOnly === '')
+                    return 'Please enter your card expiration date.';
+                if (digitsOnly.length < 4)
+                    return 'Please enter a valid expiration date.';
                 const month = parseInt(digitsOnly.slice(0, 2));
-                if (month < 1 || month > 12) {
-                    input.setCustomValidity('Please enter a valid expiration date.');
-                }
-                else {
-                    input.setCustomValidity('');
-                }
-            }
-            // update feedback message
-            const feedback = input.parentElement?.querySelector('.invalid-feedback');
-            if (feedback) {
-                feedback.textContent = input.validationMessage || 'Enter expiry as MM / YY.';
-            }
+                if (month < 1 || month > 12)
+                    return 'Please enter a valid expiration date.';
+                return '';
+            }, 'Enter expiry as MM / YY.');
         });
         // prevent non-numeric input for expiry date
         expiryInput.addEventListener('keypress', preventNonNumericInput);
@@ -205,34 +191,18 @@ function initializeCardInput() {
     if (zipInput) {
         zipInput.addEventListener('input', (e) => {
             const input = e.target;
-            const value = input.value;
-            // validate the zip code
-            const digitsOnly = value.replace(/\D/g, '');
-            if (value === '') {
-                input.setCustomValidity('Please enter your zip code.');
-            }
-            else if (digitsOnly.length !== 5 || digitsOnly !== value) {
-                input.setCustomValidity('Please enter a valid zip code.');
-            }
-            else {
-                input.setCustomValidity('');
-            }
-            // update feedback message
-            const feedback = input.parentElement?.querySelector('.invalid-feedback');
-            if (feedback) {
-                feedback.textContent = input.validationMessage || 'ZIP or postal code is required.';
-            }
+            validateInput(input, (value) => {
+                const digitsOnly = value.replace(/\D/g, '');
+                if (value === '')
+                    return 'Please enter your zip code.';
+                if (digitsOnly.length !== 5 || digitsOnly !== value)
+                    return 'Please enter a valid zip code.';
+                return '';
+            }, 'ZIP or postal code is required.');
         });
         // prevent non-numeric input for zip code
         zipInput.addEventListener('keypress', preventNonNumericInput);
     }
-}
-// Initialize when DOM is ready or immediately if already loaded
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initializeCardInput);
-}
-else {
-    initializeCardInput();
 }
 // Form submission handler
 function handleFormSubmission() {
@@ -242,8 +212,6 @@ function handleFormSubmission() {
             e.preventDefault();
             console.log('Form submitted');
             console.log('Form validity:', form.checkValidity());
-            console.log("Form submitted");
-            console.log("Form validity:", form.checkValidity());
             if (!form.checkValidity()) {
                 console.log('Form is invalid, adding validation classes');
                 form.classList.add('was-validated');
@@ -298,10 +266,14 @@ function showPaymentSuccess(transaction) {
 function generateTransactionId() {
     return 'TXN-' + Math.random().toString(36).substr(2, 9).toUpperCase();
 }
-// Initialize form submission handler
+// Initialize when DOM is ready or immediately if already loaded
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', handleFormSubmission);
+    document.addEventListener('DOMContentLoaded', () => {
+        initializeCardInput();
+        handleFormSubmission();
+    });
 }
 else {
+    initializeCardInput();
     handleFormSubmission();
 }
