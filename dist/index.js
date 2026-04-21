@@ -24,12 +24,6 @@ const cardTypes = {
         spacing: [4, 4, 4, 4],
         maxLength: 16,
     },
-    diners: {
-        name: 'Diners Club',
-        pattern: /^(36|38|30[0-5])/,
-        spacing: [4, 4, 4, 2],
-        maxLength: 14,
-    },
     jcb: {
         name: 'JCB',
         pattern: /^35[2-8][0-9]/,
@@ -65,9 +59,26 @@ function formatCardNumber(number, cardType) {
     }
     return formatted;
 }
+function luhnCheck(cardNumber) {
+    const digits = cardNumber.replace(/\D/g, '');
+    let sum = 0;
+    let shouldDouble = false;
+    for (let i = digits.length - 1; i >= 0; i--) {
+        let digit = parseInt(digits[i]);
+        if (shouldDouble) {
+            digit *= 2;
+            if (digit > 9)
+                digit -= 9;
+        }
+        sum += digit;
+        shouldDouble = !shouldDouble;
+    }
+    return sum % 10 === 0;
+}
 function initializeCardInput() {
     const cardInput = document.getElementById('cardNumber');
     const cardTypeIndicator = document.getElementById('cardTypeIndicator');
+    const cvcInput = document.getElementById('cvc');
     if (!cardInput)
         return;
     cardInput.addEventListener('input', (e) => {
@@ -86,14 +97,58 @@ function initializeCardInput() {
                 cardTypeIndicator.style.display = 'none';
             }
         }
+        // Validate the card number
+        const digitsOnly = input.value.replace(/\D/g, '');
+        if (digitsOnly === '') {
+            input.setCustomValidity('Please enter your credit card number.');
+        }
+        else if (digitsOnly.length < 13 || digitsOnly.length > 19 || !luhnCheck(digitsOnly)) {
+            input.setCustomValidity('Please enter a valid credit card number.');
+        }
+        else {
+            input.setCustomValidity('');
+        }
+        // Update feedback message
+        const feedback = input.parentElement?.querySelector('.invalid-feedback');
+        if (feedback) {
+            feedback.textContent = input.validationMessage || 'Enter a valid card number.';
+        }
     });
-    // Prevent non-numeric input
+    // Prevent non-numeric input for card number
     cardInput.addEventListener('keypress', (e) => {
         const char = String.fromCharCode(e.which);
         if (!/[0-9]/.test(char) && e.key !== 'Backspace') {
             e.preventDefault();
         }
     });
+    // Validate CVC
+    if (cvcInput) {
+        cvcInput.addEventListener('input', (e) => {
+            const input = e.target;
+            const digitsOnly = input.value.replace(/\D/g, '');
+            if (digitsOnly === '') {
+                input.setCustomValidity('Please enter your card security code.');
+            }
+            else if (digitsOnly.length < 3 || digitsOnly.length > 4) {
+                input.setCustomValidity('Please enter a valid security code.');
+            }
+            else {
+                input.setCustomValidity('');
+            }
+            // Update feedback message
+            const feedback = input.parentElement?.querySelector('.invalid-feedback');
+            if (feedback) {
+                feedback.textContent = input.validationMessage || 'Enter the 3- or 4-digit code.';
+            }
+        });
+        // Prevent non-numeric input for CVC
+        cvcInput.addEventListener('keypress', (e) => {
+            const char = String.fromCharCode(e.which);
+            if (!/[0-9]/.test(char) && e.key !== 'Backspace') {
+                e.preventDefault();
+            }
+        });
+    }
 }
 // Initialize when DOM is ready or immediately if already loaded
 if (document.readyState === 'loading') {
