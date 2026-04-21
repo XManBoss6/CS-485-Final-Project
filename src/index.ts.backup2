@@ -330,17 +330,16 @@ function handleFormSubmission(): void {
 
 // Show payment success screen
 function showPaymentSuccess(transaction: Transaction): void {
-  const message = `Billing Information:\nName: ${transaction.firstName} ${transaction.lastName}\nAddress: ${transaction.address}${transaction.address2 ? ', ' + transaction.address2 : ''}\nCity: ${transaction.city}\nState: ${transaction.state}\nZIP Code: ${transaction.zipCode}\n\nPayment Details:\nCard Ending In: **** ${transaction.cardLastFour}\nAmount Paid: $${transaction.amount.toFixed(2)}\nTransaction ID: ${generateTransactionId()}\nDate: ${new Date().toLocaleDateString()}`;
+  // For now, use a simple alert to test
+  const message = `Payment Successful!\n\nBilling Information:\nName: ${transaction.firstName} ${transaction.lastName}\nAddress: ${transaction.address}${transaction.address2 ? ', ' + transaction.address2 : ''}\nCity: ${transaction.city}\nState: ${transaction.state}\nZIP Code: ${transaction.zipCode}\n\nPayment Details:\nCard Ending In: **** ${transaction.cardLastFour}\nAmount Paid: $${transaction.amount.toFixed(2)}\nTransaction ID: ${generateTransactionId()}\nDate: ${new Date().toLocaleDateString()}`;
   
-  const modalBody = document.getElementById('successModalBody');
-  if (modalBody) {
-    modalBody.innerHTML = message.replace(/\n/g, '<br>');
-  }
+  alert(message);
   
-  const modalElement = document.getElementById('successModal');
-  if (modalElement) {
-    const modal = new (window as any).bootstrap.Modal(modalElement);
-    modal.show();
+  // Reset form after showing success
+  const form = document.querySelector('.needs-validation') as HTMLFormElement;
+  if (form) {
+    form.reset();
+    form.classList.remove('was-validated');
   }
 }
 
