@@ -7,7 +7,7 @@
     "build": "tsc",
     "start": "node dist/index.js",
     "watch": "tsc -w",
-    "serve": "http-server -p 8080",
+    "serve": "http-server -d . -p 8080",
     "dev": "concurrently \"tsc -w\" \"nodemon --watch dist --exec node server.js\""
   },
   "keywords": [],

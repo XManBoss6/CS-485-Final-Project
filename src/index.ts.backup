@@ -42,13 +42,6 @@ const cardTypes: Record<string, CardType> = {
 
 // card type logos
 const cardTypeImages: Record<string, string> = {
-  visa: '/public/card-logos/visa.png',
-  mastercard: '/public/card-logos/mastercard.png',
-  amex: '/public/card-logos/amex.png',
-  discover: '/public/card-logos/discover.png',
-  jcb: '/public/card-logos/jcb.png',
-};
-
 // Transaction Object
 interface Transaction {
   firstName: string;
@@ -61,6 +54,14 @@ interface Transaction {
   cardLastFour: string;
   amount: number;
 }
+
+  visa: '/public/card-logos/visa.png',
+  mastercard: '/public/card-logos/mastercard.png',
+  amex: '/public/card-logos/amex.png',
+  discover: '/public/card-logos/discover.png',
+  jcb: '/public/card-logos/jcb.png',
+};
+
 
 function detectCardType(number: string): CardType | null {
   for (const cardType of Object.values(cardTypes)) {
@@ -272,6 +273,19 @@ if (document.readyState === 'loading') {
   initializeCardInput();
 }
 
+// Transaction Object
+interface Transaction {
+  firstName: string;
+  lastName: string;
+  address: string;
+  address2?: string;
+  city: string;
+  state: string;
+  zipCode: string;
+  cardLastFour: string;
+  amount: number;
+}
+
 // Form submission handler
 function handleFormSubmission(): void {
   const form = document.querySelector('.needs-validation') as HTMLFormElement;
@@ -280,16 +294,10 @@ function handleFormSubmission(): void {
     form.addEventListener('submit', (e) => {
       e.preventDefault();
       
-      console.log('Form submitted');
-      console.log('Form validity:', form.checkValidity());
-      
-      console.log("Form submitted"); console.log("Form validity:", form.checkValidity()); if (!form.checkValidity()) {
-        console.log('Form is invalid, adding validation classes');
+      if (!form.checkValidity()) {
         form.classList.add('was-validated');
         return;
       }
-      
-      console.log('Form is valid, processing payment');
       
       // Collect form data
       const firstName = (document.getElementById('cardFirstName') as HTMLInputElement).value;
@@ -301,8 +309,6 @@ function handleFormSubmission(): void {
       const zipCode = (document.getElementById('billingZip') as HTMLInputElement).value;
       const cardNumber = (document.getElementById('cardNumber') as HTMLInputElement).value;
       const cardLastFour = cardNumber.replace(/\D/g, '').slice(-4);
-      
-      console.log('Collected data:', { firstName, lastName, address, city, state, zipCode, cardLastFour });
       
       // Generate random amount between 100 and 1000
       const amount = Math.floor(Math.random() * (1000 - 100 + 1)) + 100;
@@ -320,8 +326,6 @@ function handleFormSubmission(): void {
         amount
       };
       
-      console.log('Transaction object:', transaction);
-      
       // Show success screen
       showPaymentSuccess(transaction);
     });
@@ -330,18 +334,54 @@ function handleFormSubmission(): void {
 
 // Show payment success screen
 function showPaymentSuccess(transaction: Transaction): void {
-  const message = `Billing Information:\nName: ${transaction.firstName} ${transaction.lastName}\nAddress: ${transaction.address}${transaction.address2 ? ', ' + transaction.address2 : ''}\nCity: ${transaction.city}\nState: ${transaction.state}\nZIP Code: ${transaction.zipCode}\n\nPayment Details:\nCard Ending In: **** ${transaction.cardLastFour}\nAmount Paid: $${transaction.amount.toFixed(2)}\nTransaction ID: ${generateTransactionId()}\nDate: ${new Date().toLocaleDateString()}`;
+  // Create modal HTML
+  const modalHTML = `
+    <div class="modal fade" id="paymentSuccessModal" tabindex="-1" aria-labelledby="paymentSuccessModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header bg-success text-white">
+            <h5 class="modal-title" id="paymentSuccessModalLabel">Payment Successful!</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <div class="text-center mb-4">
+              <i class="bi bi-check-circle-fill text-success" style="font-size: 4rem;"></i>
+              <h4 class="mt-3">Thank you for your payment!</h4>
+            </div>
+            
+            <div class="row">
+              <div class="col-md-6">
+                <h5>Billing Information</h5>
+                <p><strong>Name:</strong> ${transaction.firstName} ${transaction.lastName}</p>
+                <p><strong>Address:</strong> ${transaction.address}${transaction.address2 ? ', ' + transaction.address2 : ''}</p>
+                <p><strong>City:</strong> ${transaction.city}</p>
+                <p><strong>State:</strong> ${transaction.state}</p>
+                <p><strong>ZIP Code:</strong> ${transaction.zipCode}</p>
+              </div>
+              <div class="col-md-6">
+                <h5>Payment Details</h5>
+                <p><strong>Card Ending In:</strong> **** ${transaction.cardLastFour}</p>
+                <p><strong>Amount Paid:</strong> $${transaction.amount.toFixed(2)}</p>
+                <p><strong>Transaction ID:</strong> ${generateTransactionId()}</p>
+                <p><strong>Date:</strong> ${new Date().toLocaleDateString()}</p>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            <button type="button" class="btn btn-success" onclick="window.location.reload()">Make Another Payment</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
   
-  const modalBody = document.getElementById('successModalBody');
-  if (modalBody) {
-    modalBody.innerHTML = message.replace(/\n/g, '<br>');
-  }
+  // Add modal to page
+  document.body.insertAdjacentHTML('beforeend', modalHTML);
   
-  const modalElement = document.getElementById('successModal');
-  if (modalElement) {
-    const modal = new (window as any).bootstrap.Modal(modalElement);
-    modal.show();
-  }
+  // Show modal
+  const modal = new (window as any).bootstrap.Modal(document.getElementById('paymentSuccessModal'));
+  modal.show();
 }
 
 // Generate random transaction ID
