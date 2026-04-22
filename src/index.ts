@@ -1,124 +1,55 @@
-// Credit Card Object
-interface CardType {
-  name: string;
-  pattern: RegExp;
-  spacing: number[];
-  maxLength: number;
+//credit card object
+interface CreditCard {
+  name: string,
+  maxLength: number,
+  img: string,
+  pattern: RegExp,
+  spacing: number[]
 }
 
-// credit card types with their patterns, spacing, max lengths, and images
-const cardTypes: Record<string, CardType> = {
-  visa: {
-    name: 'Visa',
-    pattern: /^4/,
-    spacing: [4, 4, 4, 4],
-    maxLength: 16,
-  },
-  mastercard: {
-    name: 'Mastercard',
-    pattern: /^(5[1-5]|2[2-7])/,
-    spacing: [4, 4, 4, 4],
-    maxLength: 16,
-  },
-  amex: {
-    name: 'American Express',
-    pattern: /^3[47]/,
-    spacing: [4, 6, 5],
-    maxLength: 15,
-  },
-  discover: {
-    name: 'Discover',
-    pattern: /^(6011|65|644)/,
-    spacing: [4, 4, 4, 4],
-    maxLength: 16,
-  },
-  jcb: {
-    name: 'JCB',
-    pattern: /^35[2-8][0-9]/,
-    spacing: [4, 4, 4, 4],
-    maxLength: 16,
-  },
-};
-
-// card type logos
-const cardTypeImages: Record<string, string> = {
-  visa: './public/assets/images/visa.png',
-  mastercard: './public/assets/images/mastercard.png',
-  amex: './public/assets/images/amex.png',
-  discover: './public/assets/images/discover.png',
-  jcb: './public/assets/images/jcb.png',
-};
-
-// Transaction Object
-interface Transaction {
-  firstName: string;
-  lastName: string;
-  address: string;
-  address2?: string;
-  city: string;
-  state: string;
-  zipCode: string;
-  cardLastFour: string;
-  amount: number;
+const visa: CreditCard = {
+  name: 'Visa',
+  maxLength: 16,
+  img: './public/assets/images/visa.png',
+  pattern: /^4/,
+  spacing: [4, 4, 4, 4],
 }
-
-function detectCardType(number: string): CardType | null {
-  for (const cardType of Object.values(cardTypes)) {
-    if (cardType.pattern.test(number)) {
-      return cardType;
-    }
-  }
-  return null;
+const mastercard: CreditCard = {
+  name: 'Mastercard',
+  maxLength: 16,
+  img: './public/assets/images/mastercard.png',
+  pattern: /^5[1-5]/,
+  spacing: [4, 4, 4, 4],
 }
-
-function formatCardNumber(number: string, cardType: CardType | null): string {
-  const digitsOnly = number.replace(/\D/g, '');
-
-  if (!cardType) {
-    // if no card type detected, add basic spacing for 4-4-4-4
-    return digitsOnly.replace(/(\d{4})(?=\d)/g, '$1 ').slice(0, 19);
-  }
-
-  const { spacing, maxLength } = cardType;
-  const limited = digitsOnly.slice(0, maxLength);
-
-  let formatted = '';
-  let digitIndex = 0;
-
-  for (const groupSize of spacing) {
-    if (digitIndex < limited.length) {
-      if (formatted) formatted += ' ';
-      formatted += limited.slice(digitIndex, digitIndex + groupSize);
-      digitIndex += groupSize;
-    }
-  }
-
-  return formatted;
+const amex: CreditCard = {
+  name: 'American Express',
+  maxLength: 15,
+  img: './public/assets/images/amex.png',
+  pattern: /^37/,
+  spacing: [4, 6, 5]
 }
-// the luhn algorithm basically verifies various numbers such as credit card numbers to ensure they are valid.
-function luhnCheck(cardNumber: string): boolean {
-  const digits = cardNumber.replace(/\D/g, '');
-  let sum = 0;
-  let shouldDouble = false;
-  for (let i = digits.length - 1; i >= 0; i--) {
-    let digit = parseInt(digits[i]);
-    if (shouldDouble) {
-      digit *= 2;
-      if (digit > 9) digit -= 9;
-    }
-    sum += digit;
-    shouldDouble = !shouldDouble;
-  }
-  return sum % 10 === 0;
+const discover: CreditCard = {
+  name: 'Discover',
+  maxLength: 16,
+  img: './public/assets/images/discover.png',
+  pattern: /^(6011|65)/,
+  spacing: [4, 4, 4, 4]
+} 
+const jcb: CreditCard = {
+  name: 'JCB',
+  maxLength: 16,
+  img: './public/assets/images/jcb.png',
+  pattern: /^35/,
+  spacing: [4, 4, 4, 4]
 }
-
-// helper function to prevent non-numeric input
-function preventNonNumericInput(e: KeyboardEvent): void {
-  const char = String.fromCharCode(e.which);
-  if (!/[0-9]/.test(char) && e.key !== 'Backspace') {
-    e.preventDefault();
-  }
+const noCard: CreditCard = {
+  name: 'Card Not Supported',
+  maxLength: 16,
+  img: './public/assets/images/default.png',
+  pattern: /^[0-9]{16}/,
+  spacing: [4, 4, 4, 4]
 }
+const creditCards: CreditCard[] = [visa, mastercard, amex, discover, jcb];
 
 // helper function for input validation
 function validateInput(input: HTMLInputElement, validator: (value: string) => string, feedbackMessage: string): void {
@@ -131,197 +62,97 @@ function validateInput(input: HTMLInputElement, validator: (value: string) => st
   }
 }
 
-function initializeCardInput(): void {
-  const cardInput = document.getElementById('cardNumber') as HTMLInputElement;
-  const cardTypeIndicator = document.getElementById('cardTypeIndicator') as HTMLElement;
-  const cvcInput = document.getElementById('cvc') as HTMLInputElement;
-  const expiryInput = document.getElementById('expiryDate') as HTMLInputElement;
-  const zipInput = document.getElementById('billingZip') as HTMLInputElement;
-
-  if (!cardInput) return;
-
-  cardInput.addEventListener('input', (e) => {
-    const input = e.target as HTMLInputElement;
-    const cardType = detectCardType(input.value);
-
-    // format the input
-    const formatted = formatCardNumber(input.value, cardType);
-    input.value = formatted;
-
-    // update card type indicator
-    if (cardTypeIndicator) {
-      if (cardType) {
-        const cardImage = document.getElementById('cardTypeImage') as HTMLImageElement;
-        const cardKey = Object.keys(cardTypes).find(key => cardTypes[key] === cardType);
-        if (cardImage && cardKey) {
-          cardImage.src = cardTypeImages[cardKey];
-          cardImage.alt = cardType.name;
-        }
-        cardTypeIndicator.style.display = 'block';
-      } else {
-        cardTypeIndicator.style.display = 'none';
-      }
+//function to detect card type
+function detectCardType(cardNumber: string) {
+  for (const card of creditCards) {
+    if (card.pattern.test(cardNumber)) {
+      cardType = card
+      return card
     }
-
-    // validate the card number
-    validateInput(input, (value) => {
-      const digitsOnly = value.replace(/\D/g, '');
-      if (digitsOnly === '') return 'Please enter your credit card number.';
-      if (digitsOnly.length < 13 || digitsOnly.length > 19 || !luhnCheck(digitsOnly)) return 'Please enter a valid credit card number.';
-      return '';
-    }, 'Enter a valid card number.');
-  });
-
-  // prevent non-numeric input for card number
-  cardInput.addEventListener('keypress', preventNonNumericInput);
-
-  // validate CVC
-  if (cvcInput) {
-    cvcInput.addEventListener('input', (e) => {
-      const input = e.target as HTMLInputElement;
-      validateInput(input, (value) => {
-        const digitsOnly = value.replace(/\D/g, '');
-        if (digitsOnly === '') return 'Please enter your 3 or 4-digit card security code.';
-        if (digitsOnly.length < 3 || digitsOnly.length > 4) return 'Please enter a valid security code.';
-        return '';
-      }, 'Enter the 3- or 4-digit code.');
-    });
-
-    // prevent non-numeric input for CVC
-    cvcInput.addEventListener('keypress', preventNonNumericInput);
   }
+  return null
+}
 
-  // handle expiry date input
-  if (expiryInput) {
-    expiryInput.addEventListener('input', (e) => {
-      const input = e.target as HTMLInputElement;
-      let value = input.value.replace(/\D/g, ''); // remove non-digits
+//function to format card number
+function formatCardNumber(input: HTMLInputElement, cardType: CreditCard): string {
+  input.maxLength = cardType.maxLength + cardType.spacing.length - 1 //changes max length of the element, adding additional for the whitespace
 
-      // auto-format to MM / YY when 4 digits are entered
-      if (value.length >= 4) {
-        const month = value.slice(0, 2);
-        const year = value.slice(2, 4);
-        value = `${month} / ${year}`;
-      }
+  let digits = input.value.replace(/\D/g, ""); //remove non-digits
 
-      input.value = value;
+  let result = "";
+  let index = 0;
 
-      // validate the expiry date
-      validateInput(input, (value) => {
-        const digitsOnly = value.replace(/\D/g, '');
-        if (digitsOnly === '') return 'Please enter your card expiration date.';
-        if (digitsOnly.length < 4) return 'Please enter a valid expiration date.';
-        const month = parseInt(digitsOnly.slice(0, 2));
-        if (month < 1 || month > 12) return 'Please enter a valid expiration date.';
-        return '';
-      }, 'Enter expiry as MM / YY.');
-    });
+  for (let group of cardType.spacing) {
+    if (index >= digits.length) break;
 
-    // prevent non-numeric input for expiry date
-    expiryInput.addEventListener('keypress', preventNonNumericInput);
+    result += digits.substring(index, index + group) + " ";
+    index += group;
   }
+  return result.trim();
+}
 
-  // handle zip code input
-  if (zipInput) {
-    zipInput.addEventListener('input', (e) => {
-      const input = e.target as HTMLInputElement;
-      validateInput(input, (value) => {
-        const digitsOnly = value.replace(/\D/g, '');
-        if (value === '') return 'Please enter your zip code.';
-        if (digitsOnly.length !== 5 || digitsOnly !== value) return 'Please enter a valid zip code.';
-        return '';
-      }, 'ZIP or postal code is required.');
-    });
+//function to format the expiry
 
-    // prevent non-numeric input for zip code
-    zipInput.addEventListener('keypress', preventNonNumericInput);
+
+//ERROS
+function setFieldValidity(
+  input: HTMLInputElement,
+  isValid: boolean,
+  message: string = ""
+) {
+  input.setCustomValidity(isValid ? "" : message);
+
+  if (isValid) {
+    input.classList.remove("is-invalid");
+    input.classList.add("is-valid");
+  } else {
+    input.classList.remove("is-valid");
+    input.classList.add("is-invalid");
   }
 }
 
-// Form submission handler
-function handleFormSubmission(): void {
-  const form = document.querySelector('.needs-validation') as HTMLFormElement;
+
+// FORM HANDLING
+const cardNumberInput = document.getElementById('cardNumber') as HTMLInputElement;
+let cardType: CreditCard | null = null
+
+cardNumberInput.addEventListener('input', (event: Event) => {
+  const cardNumber = event.target as HTMLInputElement;
+
+  //detect card type
+  let raw = cardNumber.value.replace(/\D/g, "");
+  cardType = detectCardType(raw);
   
-  if (form) {
-    form.addEventListener('submit', (e) => {
-      e.preventDefault();
-      
-      console.log('Form submitted');
-      console.log('Form validity:', form.checkValidity());
-      
-      if (!form.checkValidity()) {
-        console.log('Form is invalid, adding validation classes');
-        form.classList.add('was-validated');
-        return;
-      }
-      
-      console.log('Form is valid, processing payment');
-      
-      // Collect form data
-      const firstName = (document.getElementById('cardFirstName') as HTMLInputElement).value;
-      const lastName = (document.getElementById('cardLastName') as HTMLInputElement).value;
-      const address = (document.getElementById('billingAddress') as HTMLInputElement).value;
-      const address2 = (document.getElementById('billingAddress2') as HTMLInputElement).value;
-      const city = (document.getElementById('billingCity') as HTMLInputElement).value;
-      const state = (document.getElementById('billingState') as HTMLSelectElement).value;
-      const zipCode = (document.getElementById('billingZip') as HTMLInputElement).value;
-      const cardNumber = (document.getElementById('cardNumber') as HTMLInputElement).value;
-      const cardLastFour = cardNumber.replace(/\D/g, '').slice(-4);
-      
-      console.log('Collected data:', { firstName, lastName, address, city, state, zipCode, cardLastFour });
-      
-      // Generate random amount between 100 and 1000
-      const amount = Math.floor(Math.random() * (1000 - 100 + 1)) + 100;
-      
-      // Create transaction object
-      const transaction: Transaction = {
-        firstName,
-        lastName,
-        address,
-        address2: address2 || undefined,
-        city,
-        state,
-        zipCode,
-        cardLastFour,
-        amount
-      };
-      
-      console.log('Transaction object:', transaction);
-      
-      // Show success screen
-      showPaymentSuccess(transaction);
-    });
-  }
-}
+  //update card type logo
+  const cardImage = document.getElementById('cardTypeImage') as HTMLImageElement;
+  const cardTypeIndicator = document.getElementById('cardTypeIndicator') as HTMLElement;
 
-// Show payment success screen
-function showPaymentSuccess(transaction: Transaction): void {
-  const message = `Billing Information:\nName: ${transaction.firstName} ${transaction.lastName}\nAddress: ${transaction.address}${transaction.address2 ? ', ' + transaction.address2 : ''}\nCity: ${transaction.city}\nState: ${transaction.state}\nZIP Code: ${transaction.zipCode}\n\nPayment Details:\nCard Ending In: **** ${transaction.cardLastFour}\nAmount Paid: $${transaction.amount.toFixed(2)}\nTransaction ID: ${generateTransactionId()}\nDate: ${new Date().toLocaleDateString()}`;
-  
-  const modalBody = document.getElementById('successModalBody');
-  if (modalBody) {
-    modalBody.innerHTML = message.replace(/\n/g, '<br>');
+  if(cardType) {
+    cardImage.src = cardType.img;
+    cardImage.alt = cardType.name;
+    cardTypeIndicator.style.display = 'block';
+  } else {
+    cardTypeIndicator.style.display = 'none';
   }
-  
-  const modalElement = document.getElementById('successModal');
-  if (modalElement) {
-    const modal = new (window as any).bootstrap.Modal(modalElement);
-    modal.show();
+
+  // format card
+  cardNumber.value = formatCardNumber(cardNumber, cardType ?? visa); //if card type is null it'll just use the default [4, 4, 4, 4]
+
+  //error handling
+  if (raw.length === 0) {
+    setFieldValidity(cardNumberInput, false, "Please enter a card number");
   }
-}
-
-// Generate random transaction ID
-function generateTransactionId(): string {
-  return 'TXN-' + Math.random().toString(36).substr(2, 9).toUpperCase();
-}
-
-// Initialize when DOM is ready or immediately if already loaded
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', () => {
-    initializeCardInput();
-    handleFormSubmission();
-  });
-} else {
-  initializeCardInput();
-  handleFormSubmission();
-}
+  else if (!cardType) {
+    setFieldValidity(cardNumberInput, false, "Unsupported card type");
+  }
+  else if (raw.length !== cardType.maxLength) {
+    setFieldValidity(
+      cardNumberInput,
+      false,
+      'Must be ${cardType.maxLength} digits'
+    );
+  }
+  else {
+    setFieldValidity(cardNumberInput, true);
+  }
+});
