@@ -1,4 +1,5 @@
 "use strict";
+//initialzing credit card objects
 const visa = {
     name: 'Visa',
     maxLength: 16,
@@ -43,6 +44,7 @@ const noCard = {
 };
 const creditCards = [visa, mastercard, amex, discover, jcb]; //list of credit card objects
 //function to detect card type
+// takes the cardNumber and checks which card object's pattern it matches and sets cardType to that match if found, or to null if not
 function detectCardType(cardNumber) {
     for (const card of creditCards) {
         if (card.pattern.test(cardNumber)) {
@@ -53,6 +55,8 @@ function detectCardType(cardNumber) {
     return null;
 }
 //function to format card number
+// takes the cardType and cardNumber field as arguments, changes the maxlength for that field to whatever card type
+// is detected, and returns the numbers spaced according to detected card type
 function formatCardNumber(input, cardType) {
     input.maxLength = cardType.maxLength + cardType.spacing.length - 1; //changes max length of the element, adding additional for the whitespace
     let digits = input.value.replace(/\D/g, ""); //remove non-digits
@@ -67,7 +71,8 @@ function formatCardNumber(input, cardType) {
     return result.trim();
 }
 //function to format the expiry
-function formatExpiry(input, cardType) {
+// takes an expiryInput field as an argument and returns the four numbers with a "/" between them; MM/YY
+function formatExpiry(input) {
     let digits = input.value.replace(/\D/g, ""); //remove non-digits
     let result = digits.substring(0, 2);
     if (digits.length > 2) {
@@ -75,7 +80,8 @@ function formatExpiry(input, cardType) {
     }
     return result.trim();
 }
-//function to format the CVC
+//function to format the CVC, 
+// takes an cvcInput and the card type as arguments, 
 function formatCvc(input, cardType) {
     let digits = input.value.replace(/\D/g, ""); //remove non-digits
     if (cardType == amex) {
@@ -85,17 +91,20 @@ function formatCvc(input, cardType) {
     input.maxLength = 3;
     return digits;
 }
-//function to only allow specific chars for name fields
+//function to only allow specific chars for name fields 
+// takes an html input as an argument and only allows letters and a few special chars, 
+// returning only those chars, effectively preventing users from entering other chars
 function nameChars(input) {
     let chars = input.value.replace(/[^a-zA-Z.'-\s]/g, '');
     return chars;
 }
-//function to only allow specific chars for address fields
+//function to only allow specific chars for address fields, 
+// takes an html input as an argument, returns only those approved chars, preventing users from entering other chars
 function addressChars(input) {
     let chars = input.value.replace(/[^a-zA-Z0-9()#.',-\s]/g, '');
     return chars;
 }
-//ERRORS
+//function to handle errors, takes an html input, true/false, and the error message if false as arguments
 function setFieldValidity(input, isValid, message = "") {
     input.setCustomValidity(isValid ? "" : message);
     const container = input.closest(".col-12, .col-md-6, .col-md-3, .mb-3, div");
@@ -112,9 +121,9 @@ function setFieldValidity(input, isValid, message = "") {
         input.classList.add("is-invalid");
     }
 }
+let cardType = null;
 //CARD NUMBER FIELD
 const cardNumberInput = document.getElementById('cardNumber');
-let cardType = null;
 cardNumberInput.addEventListener('input', (event) => {
     const cardNumber = event.target;
     //detect card type
@@ -155,7 +164,7 @@ const expiryInput = document.getElementById('expiryDate');
 expiryInput.addEventListener('input', (event) => {
     const expiryNumber = event.target;
     //format expiry
-    expiryNumber.value = formatExpiry(expiryNumber, cardType ?? visa);
+    expiryNumber.value = formatExpiry(expiryNumber);
     //expiry validations
     let raw = expiryInput.value.replace(/\D/g, "");
     if (raw.length === 0) {
@@ -242,7 +251,7 @@ zipInput.addEventListener('input', (event) => {
 });
 // TRANSACTION CLASS
 class Transaction {
-    constructor(firstName, lastName, address, address2, city, state, zipCode, cardLastFour, amount) {
+    constructor(firstName, lastName, address, address2, city, state, zipCode, cardLastFour, totalAmount) {
         this.firstName = firstName;
         this.lastName = lastName;
         this.address = address;
@@ -251,9 +260,14 @@ class Transaction {
         this.state = state;
         this.zipCode = zipCode;
         this.cardLastFour = cardLastFour;
-        this.amount = amount;
+        this.totalAmount = totalAmount;
     }
 }
+//generates a random transaction number
+function generateTransactionId() {
+    return 'TXN-' + Math.random().toString(36).slice(2, 11).toUpperCase();
+}
+//the modal shown if the submit button is clicked when all fields are satisfied
 function showPaymentSuccess(transaction) {
     const modalBody = document.getElementById('successModalBody');
     if (!modalBody)
@@ -274,7 +288,7 @@ function showPaymentSuccess(transaction) {
     <h5 class="mb-3">Payment Details</h5>
     <p>
       <strong>Card Ending In:</strong> **** ${transaction.cardLastFour}<br>
-      <strong>Amount Paid:</strong> $${transaction.amount.toFixed(2)}<br>
+      <strong>Amount Paid:</strong> $${transaction.totalAmount.toFixed(2)}<br>
       <strong>Transaction ID:</strong> ${generateTransactionId()}<br>
       <strong>Date:</strong> ${new Date().toLocaleDateString()}
     </p>
@@ -285,9 +299,6 @@ function showPaymentSuccess(transaction) {
         modal.show();
     }
 }
-function generateTransactionId() {
-    return 'TXN-' + Math.random().toString(36).slice(2, 11).toUpperCase();
-}
 //SUBMISSION HANDLER
 document.addEventListener("DOMContentLoaded", () => {
     const form = document.querySelector("form.needs-validation");
@@ -297,8 +308,8 @@ document.addEventListener("DOMContentLoaded", () => {
         form.classList.add("was-validated");
         if (!isValid)
             return;
-        const transaction = new Transaction(document.getElementById("firstName").value, document.getElementById("lastName").value, document.getElementById("address").value, document.getElementById("address2").value || undefined, document.getElementById("city").value, document.getElementById("state").value, document.getElementById("zip").value, cardNumberInput.value.slice(-4), Math.floor(Math.random() * (1000 - 100 + 1)) + 100);
+        const transaction = new Transaction(//creates a transaction object based upon the fields when the submit button is clicked
+        document.getElementById("firstName").value, document.getElementById("lastName").value, document.getElementById("address").value, document.getElementById("address2").value || undefined, document.getElementById("city").value, document.getElementById("state").value, document.getElementById("zip").value, cardNumberInput.value.slice(-4), Math.floor(Math.random() * (1000 - 100 + 1)) + 100);
         showPaymentSuccess(transaction);
     });
 });
-//UNIT TEST

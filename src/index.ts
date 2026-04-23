@@ -1,12 +1,13 @@
 //credit card class
 interface CreditCard {
-  name: string,
-  maxLength: number,
-  img: string,
-  pattern: RegExp,
-  spacing: number[]
+  name: string, //name of card company
+  maxLength: number, //maximum number of digits for that card type
+  img: string, //image source for that card type: "/public/assets/images/..."
+  pattern: RegExp, //unique number identifer for the different card types
+  spacing: number[] //where the spaces go in the formatting
 }
 
+//initialzing credit card objects
 const visa: CreditCard = {
   name: 'Visa',
   maxLength: 16,
@@ -53,6 +54,7 @@ const creditCards: CreditCard[] = [visa, mastercard, amex, discover, jcb]; //lis
 
 
 //function to detect card type
+// takes the cardNumber and checks which card object's pattern it matches and sets cardType to that match if found, or to null if not
 function detectCardType(cardNumber: string) {
   for (const card of creditCards) {
     if (card.pattern.test(cardNumber)) {
@@ -64,6 +66,8 @@ function detectCardType(cardNumber: string) {
 }
 
 //function to format card number
+// takes the cardType and cardNumber field as arguments, changes the maxlength for that field to whatever card type
+// is detected, and returns the numbers spaced according to detected card type
 function formatCardNumber(input: HTMLInputElement, cardType: CreditCard): string {
   input.maxLength = cardType.maxLength + cardType.spacing.length - 1 //changes max length of the element, adding additional for the whitespace
 
@@ -82,7 +86,8 @@ function formatCardNumber(input: HTMLInputElement, cardType: CreditCard): string
 }
 
 //function to format the expiry
-function formatExpiry(input: HTMLInputElement, cardType: CreditCard): string {
+// takes an expiryInput field as an argument and returns the four numbers with a "/" between them; MM/YY
+function formatExpiry(input: HTMLInputElement,): string {
   let digits = input.value.replace(/\D/g, ""); //remove non-digits
 
   let result = digits.substring(0,2)
@@ -93,7 +98,8 @@ function formatExpiry(input: HTMLInputElement, cardType: CreditCard): string {
   return result.trim();
 }
 
-//function to format the CVC
+//function to format the CVC, 
+// takes an cvcInput and the card type as arguments, 
 function formatCvc(input: HTMLInputElement, cardType: CreditCard): string {
   let digits = input.value.replace(/\D/g, ""); //remove non-digits
   
@@ -106,19 +112,22 @@ function formatCvc(input: HTMLInputElement, cardType: CreditCard): string {
   return digits
 }
 
-//function to only allow specific chars for name fields
+//function to only allow specific chars for name fields 
+// takes an html input as an argument and only allows letters and a few special chars, 
+// returning only those chars, effectively preventing users from entering other chars
 function nameChars (input: HTMLInputElement): string {
   let chars = input.value.replace(/[^a-zA-Z.'-\s]/g, '');
   return chars
 }
 
-//function to only allow specific chars for address fields
+//function to only allow specific chars for address fields, 
+// takes an html input as an argument, returns only those approved chars, preventing users from entering other chars
 function addressChars (input: HTMLInputElement): string {
   let chars = input.value.replace(/[^a-zA-Z0-9()#.',-\s]/g, '');
   return chars
 }
 
-//ERRORS
+//function to handle errors, takes an html input, true/false, and the error message if false as arguments
 function setFieldValidity(
   input: HTMLInputElement,
   isValid: boolean,
@@ -143,11 +152,10 @@ function setFieldValidity(
   }
 }
 
+let cardType: CreditCard | null = null
 
 //CARD NUMBER FIELD
 const cardNumberInput = document.getElementById('cardNumber') as HTMLInputElement;
-let cardType: CreditCard | null = null
-
 cardNumberInput.addEventListener('input', (event: Event) => {
   const cardNumber = event.target as HTMLInputElement;
 
@@ -198,7 +206,7 @@ expiryInput.addEventListener('input', (event: Event) => {
   const expiryNumber = event.target as HTMLInputElement;
 
   //format expiry
-  expiryNumber.value = formatExpiry(expiryNumber, cardType ?? visa)
+  expiryNumber.value = formatExpiry(expiryNumber)
   
   //expiry validations
   let raw = expiryInput.value.replace(/\D/g, "");
@@ -297,6 +305,8 @@ zipInput.addEventListener('input', (event: Event) => {
 });
 
 
+
+
 // TRANSACTION CLASS
 class Transaction {
   constructor(
@@ -308,10 +318,16 @@ class Transaction {
     public state: string,
     public zipCode: string,
     public cardLastFour: string,
-    public amount: number
+    public totalAmount: number
   ) {}
 }
 
+//generates a random transaction number
+function generateTransactionId(): string {
+  return 'TXN-' + Math.random().toString(36).slice(2, 11).toUpperCase();
+}
+
+//the modal shown if the submit button is clicked when all fields are satisfied
 function showPaymentSuccess(transaction: Transaction): void {
   const modalBody = document.getElementById('successModalBody');
 
@@ -333,7 +349,7 @@ function showPaymentSuccess(transaction: Transaction): void {
     <h5 class="mb-3">Payment Details</h5>
     <p>
       <strong>Card Ending In:</strong> **** ${transaction.cardLastFour}<br>
-      <strong>Amount Paid:</strong> $${transaction.amount.toFixed(2)}<br>
+      <strong>Amount Paid:</strong> $${transaction.totalAmount.toFixed(2)}<br>
       <strong>Transaction ID:</strong> ${generateTransactionId()}<br>
       <strong>Date:</strong> ${new Date().toLocaleDateString()}
     </p>
@@ -344,10 +360,6 @@ function showPaymentSuccess(transaction: Transaction): void {
     const modal = new (window as any).bootstrap.Modal(modalElement);
     modal.show();
   }
-}
-
-function generateTransactionId(): string {
-  return 'TXN-' + Math.random().toString(36).slice(2, 11).toUpperCase();
 }
 
 //SUBMISSION HANDLER
@@ -362,7 +374,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (!isValid) return;
 
-    const transaction = new Transaction(
+    const transaction = new Transaction( //creates a transaction object based upon the fields when the submit button is clicked
       (document.getElementById("firstName") as HTMLInputElement).value,
       (document.getElementById("lastName") as HTMLInputElement).value,
       (document.getElementById("address") as HTMLInputElement).value,
@@ -377,6 +389,3 @@ document.addEventListener("DOMContentLoaded", () => {
     showPaymentSuccess(transaction);
   });
 });
-
-
-//UNIT TEST
