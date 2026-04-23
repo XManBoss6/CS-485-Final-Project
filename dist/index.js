@@ -41,17 +41,7 @@ const noCard = {
     pattern: /^[0-9]{16}/,
     spacing: [4, 4, 4, 4]
 };
-const creditCards = [visa, mastercard, amex, discover, jcb];
-// helper function for input validation
-function validateInput(input, validator, feedbackMessage) {
-    const value = input.value;
-    const error = validator(value);
-    input.setCustomValidity(error);
-    const feedback = input.parentElement?.querySelector('.invalid-feedback');
-    if (feedback) {
-        feedback.textContent = input.validationMessage || feedbackMessage;
-    }
-}
+const creditCards = [visa, mastercard, amex, discover, jcb]; //list of credit card objects
 //function to detect card type
 function detectCardType(cardNumber) {
     for (const card of creditCards) {
@@ -77,9 +67,42 @@ function formatCardNumber(input, cardType) {
     return result.trim();
 }
 //function to format the expiry
-//ERROS
+function formatExpiry(input, cardType) {
+    let digits = input.value.replace(/\D/g, ""); //remove non-digits
+    let result = digits.substring(0, 2);
+    if (digits.length > 2) {
+        result += "/" + digits.substring(2);
+    }
+    return result.trim();
+}
+//function to format the CVC
+function formatCvc(input, cardType) {
+    let digits = input.value.replace(/\D/g, ""); //remove non-digits
+    if (cardType == amex) {
+        input.maxLength = 4;
+        return digits;
+    }
+    input.maxLength = 3;
+    return digits;
+}
+//function to only allow specific chars for name fields
+function nameChars(input) {
+    let chars = input.value.replace(/[^a-zA-Z.'-\s]/g, '');
+    return chars;
+}
+//function to only allow specific chars for address fields
+function addressChars(input) {
+    let chars = input.value.replace(/[^a-zA-Z0-9()#.',-\s]/g, '');
+    return chars;
+}
+//ERRORS
 function setFieldValidity(input, isValid, message = "") {
     input.setCustomValidity(isValid ? "" : message);
+    const container = input.closest(".col-12, .col-md-6, .col-md-3, .mb-3, div");
+    const feedback = container?.querySelector(".invalid-feedback");
+    if (!isValid && feedback) {
+        feedback.textContent = message;
+    }
     if (isValid) {
         input.classList.remove("is-invalid");
         input.classList.add("is-valid");
@@ -89,7 +112,7 @@ function setFieldValidity(input, isValid, message = "") {
         input.classList.add("is-invalid");
     }
 }
-// FORM HANDLING
+//CARD NUMBER FIELD
 const cardNumberInput = document.getElementById('cardNumber');
 let cardType = null;
 cardNumberInput.addEventListener('input', (event) => {
@@ -108,19 +131,174 @@ cardNumberInput.addEventListener('input', (event) => {
     else {
         cardTypeIndicator.style.display = 'none';
     }
-    // format card
+    // format card number
     cardNumber.value = formatCardNumber(cardNumber, cardType ?? visa); //if card type is null it'll just use the default [4, 4, 4, 4]
-    //error handling
-    if (raw.length === 0) {
-        setFieldValidity(cardNumberInput, false, "Please enter a card number");
+    // card number validation
+    if (raw.length === 0 && cardNumberInput === document.activeElement) {
+        setFieldValidity(cardNumberInput, false, 'Please enter your credit card number.');
     }
     else if (!cardType) {
-        setFieldValidity(cardNumberInput, false, "Unsupported card type");
+        if (raw.length > 4) {
+            setFieldValidity(cardNumberInput, false, 'The card entered is not supported. Please enter a different card type.');
+        }
     }
-    else if (raw.length !== cardType.maxLength) {
-        setFieldValidity(cardNumberInput, false, 'Must be ${cardType.maxLength} digits');
+    else if ((raw.length !== cardType.maxLength)) {
+        setFieldValidity(cardNumberInput, false, `Must be ${cardType?.maxLength} digits` //string template rather than string literal
+        );
     }
     else {
         setFieldValidity(cardNumberInput, true);
     }
 });
+//EXPIRY FIELD
+const expiryInput = document.getElementById('expiryDate');
+expiryInput.addEventListener('input', (event) => {
+    const expiryNumber = event.target;
+    //format expiry
+    expiryNumber.value = formatExpiry(expiryNumber, cardType ?? visa);
+    //expiry validations
+    let raw = expiryInput.value.replace(/\D/g, "");
+    if (raw.length === 0) {
+        setFieldValidity(expiryInput, false, "Please enter your card expiration date");
+        return;
+    }
+    const month = Number(raw.substring(0, 2));
+    if ((month < 1 || month > 12) || raw.length < 4) {
+        setFieldValidity(expiryInput, false, "Please enter a valid expiration date");
+        return;
+    }
+    setFieldValidity(expiryInput, true);
+});
+//CVC FIELD
+const cvcInput = document.getElementById('cvc');
+cvcInput.addEventListener('input', (event) => {
+    const cvcNumber = event.target;
+    //format cvc
+    cvcNumber.value = formatCvc(cvcNumber, cardType ?? visa);
+    //cvc validations
+    let raw = cvcNumber.value.replace(/\D/g, "");
+    if (raw.length === 0 && cvcInput === document.activeElement) {
+        setFieldValidity(cvcInput, false, 'Please enter your cards security code.');
+    }
+    else if ((cardType ?? visa) == amex && raw.length < 4) {
+        setFieldValidity(cvcInput, false, 'Please enter a 4 digit security code.');
+    }
+    else if (raw.length < 3) {
+        setFieldValidity(cvcInput, false, 'Please enter a 3 digit security code');
+    }
+    else {
+        setFieldValidity(cvcInput, true);
+    }
+    ;
+});
+//CARD NAME FIELD
+const cardNameInput = document.getElementById('cardName');
+cardNameInput.addEventListener('input', (event) => {
+    const cardName = event.target;
+    cardName.value = nameChars(cardName);
+});
+//BILLING FIRST NAME FIELD
+const firstNameInput = document.getElementById('firstName');
+firstNameInput.addEventListener('input', (event) => {
+    const firstName = event.target;
+    firstName.value = nameChars(firstName);
+});
+//BILLING LAST NAME FIELD
+const lastNameInput = document.getElementById('lastName');
+lastNameInput.addEventListener('input', (event) => {
+    const lastName = event.target;
+    lastName.value = nameChars(lastName);
+});
+//BILLLING ADDRESS FIELD
+const addressInput = document.getElementById('address');
+addressInput.addEventListener('input', (event) => {
+    const address = event.target;
+    address.value = addressChars(address);
+});
+//BILLING ADDTIONAL INFO FIELD is skipped since its not required and they can put anything they want in it
+//BILLING CITY FIELD
+const cityInput = document.getElementById('city');
+cityInput.addEventListener('input', (event) => {
+    const city = event.target;
+    city.value = addressChars(city);
+});
+//BILLING ZIP FIELD
+const zipInput = document.getElementById('zip');
+zipInput.addEventListener('input', (event) => {
+    const zip = event.target;
+    let digits = zip.value.replace(/\D/g, "");
+    zipInput.value = digits;
+    //zip validator
+    let raw = zip.value.replace(/\D/g, "");
+    if (raw.length === 0 && zipInput === document.activeElement) {
+        setFieldValidity(zipInput, false, 'Please enter your zip code.');
+    }
+    else if (raw.length < 5) {
+        setFieldValidity(zipInput, false, 'Please enter a 5 digit zip code.');
+    }
+    else {
+        setFieldValidity(zipInput, true);
+    }
+});
+// TRANSACTION CLASS
+class Transaction {
+    constructor(firstName, lastName, address, address2, city, state, zipCode, cardLastFour, amount) {
+        this.firstName = firstName;
+        this.lastName = lastName;
+        this.address = address;
+        this.address2 = address2;
+        this.city = city;
+        this.state = state;
+        this.zipCode = zipCode;
+        this.cardLastFour = cardLastFour;
+        this.amount = amount;
+    }
+}
+function showPaymentSuccess(transaction) {
+    const modalBody = document.getElementById('successModalBody');
+    if (!modalBody)
+        return;
+    modalBody.innerHTML = `
+    <h5 class="mb-3">Billing Information</h5>
+    <p>
+      <strong>Name:</strong> ${transaction.firstName} ${transaction.lastName}<br>
+      <strong>Address:</strong> ${transaction.address}
+      ${transaction.address2 ? ', ' + transaction.address2 : ''}<br>
+      <strong>City:</strong> ${transaction.city}<br>
+      <strong>State:</strong> ${transaction.state}<br>
+      <strong>ZIP:</strong> ${transaction.zipCode}
+    </p>
+
+    <hr>
+
+    <h5 class="mb-3">Payment Details</h5>
+    <p>
+      <strong>Card Ending In:</strong> **** ${transaction.cardLastFour}<br>
+      <strong>Amount Paid:</strong> $${transaction.amount.toFixed(2)}<br>
+      <strong>Transaction ID:</strong> ${generateTransactionId()}<br>
+      <strong>Date:</strong> ${new Date().toLocaleDateString()}
+    </p>
+  `;
+    const modalElement = document.getElementById('successModal');
+    if (modalElement) {
+        const modal = new window.bootstrap.Modal(modalElement);
+        modal.show();
+    }
+}
+function generateTransactionId() {
+    return 'TXN-' + Math.random().toString(36).slice(2, 11).toUpperCase();
+}
+//SUBMISSION HANDLER
+document.addEventListener("DOMContentLoaded", () => {
+    const form = document.querySelector("form.needs-validation");
+    form.addEventListener("submit", (e) => {
+        e.preventDefault();
+        const isValid = form.checkValidity();
+        form.classList.add("was-validated");
+        if (!isValid)
+            return;
+        const transaction = new Transaction(document.getElementById("firstName").value, document.getElementById("lastName").value, document.getElementById("address").value, document.getElementById("address2").value || undefined, document.getElementById("city").value, document.getElementById("state").value, document.getElementById("zip").value, cardNumberInput.value.slice(-4), Math.floor(Math.random() * (1000 - 100 + 1)) + 100);
+        showPaymentSuccess(transaction);
+    });
+});
+//UNIT TEST
