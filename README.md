@@ -3,7 +3,9 @@
 To run the program, please enter the following commands in the terminal (you may need to install "node.js"):
 
 > npm run start
+
 > npm run build
+
 > npm run serve
 
 then open the forwarded port
