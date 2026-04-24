@@ -35,13 +35,6 @@ const jcb = {
     pattern: /^35/,
     spacing: [4, 4, 4, 4]
 };
-const noCard = {
-    name: 'Card Not Supported',
-    maxLength: 16,
-    img: './public/assets/images/default.png',
-    pattern: /^[0-9]{16}/,
-    spacing: [4, 4, 4, 4]
-};
 const creditCards = [visa, mastercard, amex, discover, jcb]; //list of credit card objects
 //function to detect card type
 // takes the cardNumber and checks which card object's pattern it matches and sets cardType to that match if found, or to null if not
@@ -62,11 +55,11 @@ function formatCardNumber(input, cardType) {
     let digits = input.value.replace(/\D/g, ""); //remove non-digits
     let result = "";
     let index = 0;
-    for (let group of cardType.spacing) {
+    for (let space of cardType.spacing) {
         if (index >= digits.length)
             break;
-        result += digits.substring(index, index + group) + " ";
-        index += group;
+        result += digits.substring(index, index + space) + " ";
+        index += space;
     }
     return result.trim();
 }
@@ -152,7 +145,7 @@ cardNumberInput.addEventListener('input', (event) => {
         }
     }
     else if ((raw.length !== cardType.maxLength)) {
-        setFieldValidity(cardNumberInput, false, `Must be ${cardType?.maxLength} digits` //string template rather than string literal
+        setFieldValidity(cardNumberInput, false, `Must be ${cardType?.maxLength} digits for ${cardType.name}` //string template rather than string literal
         );
     }
     else {
@@ -172,8 +165,12 @@ expiryInput.addEventListener('input', (event) => {
         return;
     }
     const month = Number(raw.substring(0, 2));
-    if ((month < 1 || month > 12) || raw.length < 4) {
-        setFieldValidity(expiryInput, false, "Please enter a valid expiration date");
+    if (month < 1 || month > 12) {
+        setFieldValidity(expiryInput, false, "Please enter a valid month");
+        return;
+    }
+    if (raw.length < 4) {
+        setFieldValidity(expiryInput, false, "Please enter a valid date (MM/YY)");
         return;
     }
     setFieldValidity(expiryInput, true);
@@ -187,7 +184,7 @@ cvcInput.addEventListener('input', (event) => {
     //cvc validations
     let raw = cvcNumber.value.replace(/\D/g, "");
     if (raw.length === 0 && cvcInput === document.activeElement) {
-        setFieldValidity(cvcInput, false, 'Please enter your cards security code.');
+        setFieldValidity(cvcInput, false, 'Please enter your card\'s security code.');
     }
     else if ((cardType ?? visa) == amex && raw.length < 4) {
         setFieldValidity(cvcInput, false, 'Please enter a 4 digit security code.');
